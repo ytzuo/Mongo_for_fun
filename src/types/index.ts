@@ -12,5 +12,7 @@ export interface Post {
   createdAt: string;
   likes: number;
   dislikes: number;
+  likedBy?: string[];
+  dislikedBy?: string[];
   comments: Comment[];
 }

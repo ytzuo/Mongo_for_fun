@@ -99,8 +99,12 @@ PostSchema.virtual('dislikes').get(function() {
 PostSchema.index({ content: "text", author: "text" });
 
 // 3. 导出模型
-// 注意：在 Next.js 中，为了防止热更新导致的 "OverwriteModelError"，
-// 我们需要检查 mongoose.models 是否已经存在该模型
+// 注意：在 Next.js 开发模式下，热更新可能导致 Model 缓存不一致。
+// 为了确保 Schema 修改生效 (如添加 likedBy)，我们可以尝试在非生产环境下重置 Model
+if (process.env.NODE_ENV !== 'production') {
+    delete mongoose.models.Post;
+}
+
 const Post: Model<IPost> = mongoose.models.Post || mongoose.model<IPost>("Post", PostSchema);
 
 export default Post;

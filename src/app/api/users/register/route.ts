@@ -11,12 +11,18 @@ export async function POST(request: NextRequest) {
         if (!body.username || !body.email || !body.password) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
-        // 检查用户是否已存在
-        const existingUser = await User.findOne({ 
-            $or: [ { username: body.username }, { email: body.email } ] 
-        }).lean();
+        // 检查用户是否已存在 (仅根据邮箱判断)
+        const existingUser = await User.findOne({ email: body.email }).lean();
+        
         if (existingUser) {
-            return NextResponse.json({ error: "User alreadyexists" }, { status: 409 });
+            // 如果邮箱存在，检查用户名是否一致
+            if (existingUser.username !== body.username) {
+                return NextResponse.json({ 
+                    error: "该邮箱已被其他用户名注册，无法使用" 
+                }, { status: 409 });
+            }
+            // 如果用户名一致，视为自动登录成功，返回用户信息
+            return NextResponse.json(existingUser, { status: 200 });
         }
 
         // 创建新用户

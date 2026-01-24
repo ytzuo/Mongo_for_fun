@@ -13,11 +13,17 @@ export async function POST() {
 
     // 2. 强制创建索引
     // 注意：Next.js 开发环境下 Mongoose 模型可能被缓存，导致 schema 更新未生效
-    // 因此这里使用底层 createIndex 强制创建，确保 Text Index 一定存在
+    // 为了应对 Schema 变更（例如去掉了 username 的 unique 索引），我们需要先删除旧索引
+    try {
+        await User.collection.dropIndexes();
+    } catch (e) {
+        console.log("No indexes to drop or drop error", e);
+    }
+    
+    // 重新创建 Text Index 和 Schema 定义的索引 (unique: true on email)
     await Post.collection.createIndex({ content: "text", author: "text" });
-    // 其他标准索引交给 createIndexes
     await Post.createIndexes();
-    await User.createIndexes();
+    await User.createIndexes(); // 这会根据新的 UserSchema (username 非唯一)创建索引
 
     console.log("Indexes created successfully");
 

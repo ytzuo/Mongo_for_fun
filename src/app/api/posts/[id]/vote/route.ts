@@ -29,12 +29,16 @@ export async function PATCH(request: NextRequest, props: { params: Promise<{ id:
              updateOps.$pull = { likedBy: username, dislikedBy: username };
         }
         
+        console.log(`[Vote] User: ${username}, Type: ${type}, PostId: ${params.id}`);
+
         // 使用原子操作更新
         const updatedPost = await Post.findByIdAndUpdate(
             params.id,
             updateOps,
             { new: true }
         );
+
+        console.log(`[Vote] Success. New Likes: ${updatedPost?.likes} (len: ${updatedPost?.likedBy?.length})`);
 
         if (!updatedPost) {
             return NextResponse.json({ error: "帖子不存在" }, { status: 404 });

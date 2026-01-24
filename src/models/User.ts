@@ -13,8 +13,8 @@ export interface IUser extends Document {
 
 // 2. Schema 不变
 const UserSchema = new Schema<IUser>({
-  username: { type: String, required: true, unique: true },
-  email: { type: String, required: true, unique: true },
+  username: { type: String, required: true }, // 移除 unique: true，允许昵称重复
+  email: { type: String, required: true, unique: true }, // 仅邮箱保持唯一
   password: { type: String, required: true }
 }, { timestamps: true });
 

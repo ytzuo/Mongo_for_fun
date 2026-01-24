@@ -13,16 +13,20 @@ export function PostCard({ post: initialPost }: PostCardProps) {
   // 使用初始数据初始化状态
   const [likes, setLikes] = useState(initialPost.likes);
   const [dislikes, setDislikes] = useState(initialPost.dislikes);
-  
-  // 初始化用户投票状态
-  const [userVote, setUserVote] = useState<"like" | "dislike" | null>(() => {
-    if (!username) return null;
-    // initialPost.likedBy 可能在某些即时更新中未及时同步，建议在真实项目中 fetch 获取
-    // 这里为了演示，假设 initialPost 包含了 likedBy 数组 (由后端 Post Model 提供)
-    if ((initialPost as any).likedBy?.includes(username)) return "like";
-    if ((initialPost as any).dislikedBy?.includes(username)) return "dislike";
-    return null;
-  });
+  // 初始化为 null
+  const [userVote, setUserVote] = useState<"like" | "dislike" | null>(null);
+
+  // 监听 username 变化，延迟同步初始投票状态
+  // 这解决了页面刚加载时 username 为 null 导致状态判定错误的问题
+  React.useEffect(() => {
+    if (username) {
+        if (initialPost.likedBy?.includes(username)) {
+            setUserVote("like");
+        } else if (initialPost.dislikedBy?.includes(username)) {
+            setUserVote("dislike");
+        }
+    }
+  }, [username, initialPost]);
 
   const [comments, setComments] = useState<Comment[]>(initialPost.comments);
   const [newComment, setNewComment] = useState("");
