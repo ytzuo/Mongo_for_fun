@@ -24,10 +24,10 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen bg-neutral-100 dark:bg-neutral-950 py-10 px-4">
-      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
+      <div className="max-w-6xl mx-auto flex flex-row flex-wrap gap-8">
         
         {/* 左侧主要内容区域 (占大约 70%) */}
-        <div className="w-full lg:flex-1 min-w-0">
+        <div className="flex-1 min-w-0" style={{ minWidth: '600px' }}>
           <header className="mb-8">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
@@ -64,7 +64,7 @@ export default async function Home() {
         </div>
 
         {/* 右侧侧边栏 (占大约 30%, 固定宽度) */}
-        <div className="w-full lg:w-80 flex-shrink-0 space-y-6">
+        <div className="w-80 flex-shrink-0 space-y-6">
            {/* 搜索框放在右侧 */}
            <SearchBar />
 
