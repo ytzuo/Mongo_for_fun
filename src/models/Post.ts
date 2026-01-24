@@ -70,6 +70,9 @@ const PostSchema = new Schema<IPost>(
   }
 );
 
+// 为全文搜索创建索引
+PostSchema.index({ content: "text", author: "text" });
+
 // 3. 导出模型
 // 注意：在 Next.js 中，为了防止热更新导致的 "OverwriteModelError"，
 // 我们需要检查 mongoose.models 是否已经存在该模型
