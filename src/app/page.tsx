@@ -4,6 +4,7 @@ import { CreatePostForm } from "@/components/CreatePostForm";
 import { SearchBar } from "@/components/SearchBar";
 import { TrendingWidget } from "@/components/TrendingWidget";
 import { SeedButton } from "@/components/SeedButton"; // 引入新组件
+import { UserProfile } from "@/components/UserProfile"; 
 import connectDB from "@/lib/db";
 import PostModel from "@/models/Post";
 
@@ -61,7 +62,10 @@ export default async function Home(props: HomeProps) {
                 <p className="text-neutral-500 dark:text-neutral-400 mb-6 flex-1">
                 {query ? `正在显示 "${query}" 的搜索结果` : "这是一个基于 Next.js 和 MongoDB 的示例项目。在这里掌握 Unique Index, Text Search 和 Aggregation Pipeline。"}
                 </p>
-                <SeedButton />
+                <div className="flex items-center gap-4">
+                  <UserProfile />
+                  <SeedButton />
+                </div>
             </div>
           </header>
 
