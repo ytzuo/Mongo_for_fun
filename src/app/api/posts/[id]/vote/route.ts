@@ -7,7 +7,8 @@ type VoteBody = { type : VoteType; value: 1 | -1  };
 
 // 给帖子投票
 export async function PATCH(request: NextRequest, 
-    { params }: { params: { id: string } }) {
+    props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
     await connectDB();
 
     try {

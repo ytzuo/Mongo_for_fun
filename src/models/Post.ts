@@ -35,6 +35,8 @@ const CommentSchema = new Schema<IComment>({
     type: Date, 
     default: Date.now 
   }
+}, {
+  toJSON: { virtuals: true }
 });
 
 // 2. 定义 Post Schema

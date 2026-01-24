@@ -18,6 +18,12 @@ export async function POST(request: NextRequest) {
     await connectDB();
     try {
         const data = await request.json();
+        
+        // 简单的后端验证
+        if (!data.author || !data.content) {
+            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+        }
+
         const newPost = new Post({
             author: data.author,
             content: data.content,
@@ -26,9 +32,12 @@ export async function POST(request: NextRequest) {
             dislikes: 0,
             comments: []
         });
+
         const savedPost = await newPost.save();
+        console.log("Post saved successfully:", savedPost._id);
         return NextResponse.json(savedPost, { status: 201 });
-    } catch (error) {
-        return NextResponse.json({ error: "Failed to create post" }, { status: 500 });
+    } catch (error: any) {
+        console.error("Failed to create post:", error);
+        return NextResponse.json({ error: error.message || "Failed to create post" }, { status: 500 });
     }
 }

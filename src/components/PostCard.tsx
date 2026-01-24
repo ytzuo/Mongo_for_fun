@@ -8,45 +8,114 @@ interface PostCardProps {
 }
 
 export function PostCard({ post: initialPost }: PostCardProps) {
-  // 模拟本地状态，未来这些应该通过 API 与 MongoDB 交互
+  // 使用初始数据初始化状态
   const [likes, setLikes] = useState(initialPost.likes);
   const [dislikes, setDislikes] = useState(initialPost.dislikes);
+  // 注意：在没有用户认证系统的情况下，刷新页面会丢失 "已投票" 状态
   const [userVote, setUserVote] = useState<"like" | "dislike" | null>(null);
 
   const [comments, setComments] = useState<Comment[]>(initialPost.comments);
   const [newComment, setNewComment] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleVote = (type: "like" | "dislike") => {
-    // 简单的投票逻辑模拟
+  const handleVote = async (type: "like" | "dislike") => {
+    // 1. 乐观更新 (Optimistic UI Update)
+    const previousUserVote = userVote;
+    const previousLikes = likes;
+    const previousDislikes = dislikes;
+
+    let newLikes = likes;
+    let newDislikes = dislikes;
+
+    // 计算新的 UI 状态
     if (userVote === type) {
       // 取消投票
-      if (type === "like") setLikes((prev) => prev - 1);
-      else setDislikes((prev) => prev - 1);
+      if (type === "like") newLikes--;
+      else newDislikes--;
       setUserVote(null);
     } else {
       // 切换投票或新投票
-      if (userVote === "like") setLikes((prev) => prev - 1);
-      if (userVote === "dislike") setDislikes((prev) => prev - 1);
+      if (userVote === "like") newLikes--;
+      if (userVote === "dislike") newDislikes--;
 
-      if (type === "like") setLikes((prev) => prev + 1);
-      else setDislikes((prev) => prev + 1);
+      if (type === "like") newLikes++;
+      else newDislikes++;
       setUserVote(type);
+    }
+    
+    setLikes(newLikes);
+    setDislikes(newDislikes);
+
+    // 2. 发送 API 请求
+    try {
+      const requests = [];
+
+      // 如果之前投过票且不是当前选中的（即切换投票），先取消之前的
+      if (previousUserVote && previousUserVote !== type) {
+        requests.push(
+          fetch(`/api/posts/${initialPost.id}/vote`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: previousUserVote, value: -1 }),
+          })
+        );
+      }
+
+      // 处理当前的点击：如果是取消（userVote === type），则 value 为 -1，否则为 1
+      const isCancel = previousUserVote === type;
+      requests.push(
+        fetch(`/api/posts/${initialPost.id}/vote`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type, value: isCancel ? -1 : 1 }),
+        })
+      );
+
+      const responses = await Promise.all(requests);
+      for (const res of responses) {
+        if (!res.ok) throw new Error("Vote failed");
+      }
+      
+    } catch (error) {
+      console.error("Vote error:", error);
+      // 3. 错误回滚
+      setUserVote(previousUserVote);
+      setLikes(previousLikes);
+      setDislikes(previousDislikes);
+      alert("投票失败，请重试");
     }
   };
 
-  const handleAddComment = (e: React.FormEvent) => {
+  const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || isSubmitting) return;
 
-    const comment: Comment = {
-      id: Date.now().toString(),
-      content: newComment,
-      author: "当前用户", // 模拟当前登录用户
-      createdAt: new Date().toISOString(),
-    };
+    setIsSubmitting(true);
 
-    setComments((prev) => [...prev, comment]);
-    setNewComment("");
+    try {
+      const res = await fetch(`/api/posts/${initialPost.id}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: newComment,
+          author: "当前用户", // 实际项目中应从 Session 获取
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to post comment");
+      }
+
+      const savedComment: Comment = await res.json();
+
+      setComments((prev) => [...prev, savedComment]);
+      setNewComment("");
+    } catch (error) {
+      console.error("Comment error:", error);
+      alert("评论发表失败");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -79,6 +148,7 @@ export function PostCard({ post: initialPost }: PostCardProps) {
       <div className="px-4 py-3 bg-neutral-50 dark:bg-neutral-900 flex items-center gap-4">
         <button
           onClick={() => handleVote("like")}
+          disabled={isSubmitting} // 也可以选择在投票时不禁用，因为是乐观更新
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
             userVote === "like"
               ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
@@ -104,6 +174,7 @@ export function PostCard({ post: initialPost }: PostCardProps) {
 
         <button
           onClick={() => handleVote("dislike")}
+          disabled={isSubmitting}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
             userVote === "dislike"
               ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
@@ -141,7 +212,8 @@ export function PostCard({ post: initialPost }: PostCardProps) {
             <p className="text-sm text-neutral-400 italic">暂无评论，快来抢沙发...</p>
           ) : (
             comments.map((comment) => (
-              <div key={comment.id} className="flex gap-3">
+              // 使用 _id 作为后备 key，以防 id 虚拟字段因序列化问题丢失
+              <div key={comment.id || (comment as any)._id} className="flex gap-3">
                 <div className="w-8 h-8 rounded-full bg-neutral-200 dark:bg-neutral-700 flex-shrink-0 flex items-center justify-center text-xs font-bold text-neutral-600 dark:text-neutral-300">
                   {comment.author[0]}
                 </div>
@@ -167,15 +239,16 @@ export function PostCard({ post: initialPost }: PostCardProps) {
             type="text"
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
+            disabled={isSubmitting}
             placeholder="写下你的看法..."
-            className="flex-1 px-4 py-2 rounded-full border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            className="flex-1 px-4 py-2 rounded-full border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm disabled:opacity-50"
           />
           <button
             type="submit"
-            disabled={!newComment.trim()}
+            disabled={!newComment.trim() || isSubmitting}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-full text-sm font-medium transition-colors"
           >
-            发送
+            {isSubmitting ? "发送中..." : "发送"}
           </button>
         </form>
       </div>

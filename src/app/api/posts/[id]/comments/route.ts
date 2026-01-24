@@ -3,14 +3,16 @@ import Post, { IComment, IPost } from '@/models/Post';
 import connectDB from '@/lib/db';
 
 export async function POST(request: NextRequest, 
-    { params }: { params: { id: string } }) {
+    props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
     await connectDB();
 
     try {
-        const body: { comment: string , auth: string } = await request.json();
+        const body = await request.json(); // 注意：这里 body 结构需要跟前端匹配
+        // 前端传的是 { content, author }
         const newComment: IComment = {
-            content: body.comment,
-            author: body.auth || "匿名用户",
+            content: body.content,
+            author: body.author || "匿名用户",
             createdAt: new Date()
         }
 
