@@ -1,13 +1,18 @@
 "use client";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export function SearchBar() {
   const [query, setQuery] = useState("");
+  const router = useRouter();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: 对接后端 API: /api/posts/search?q=xxx
-    alert(`UI演示：正在搜索 "${query}" ... (后端接口待实现)`);
+    if (!query.trim()) {
+      router.push("/");
+    } else {
+      router.push(`/?q=${encodeURIComponent(query)}`);
+    }
   };
 
   return (

@@ -1,13 +1,32 @@
-import React from 'react';
+"use client";
+import React, { useEffect, useState } from 'react';
 
 export function TrendingWidget() {
-  // 模拟数据 - 后续通过 MongoDB 聚合管道 ($aggregate) 从后端获取
-  const trendingTopics = [
-    { id: '1', title: '如何使用 MongoDB 唯一索引防止重复注册？', score: 980 },
-    { id: '2', title: 'Next.js 16 Server Actions 实战技巧', score: 756 },
-    { id: '3', title: '聚合管道：数据分析的神器', score: 542 },
-    { id: '4', title: '文本搜索 $text 性能优化指南', score: 320 },
-  ];
+  const [trendingTopics, setTrendingTopics] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchHotPosts() {
+      try {
+        const res = await fetch('/api/posts/hot?limit=5');
+        if (res.ok) {
+           const data = await res.json();
+           // 数据适配：后端返回的是 Post 对象，我们需要显示 title/content
+           setTrendingTopics(data.map((post: any) => ({
+             id: post._id,
+             title: post.content.length > 30 ? post.content.substring(0, 30) + '...' : post.content,
+             score: post.activityScore
+           })));
+        }
+      } catch (error) {
+        console.error("Failed to fetch hot posts", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchHotPosts();
+  }, []);
 
   return (
     <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 p-5 sticky top-6 shadow-sm">
@@ -18,6 +37,11 @@ export function TrendingWidget() {
         </h3>
       </div>
       
+      {loading ? (
+        <div className="text-center text-sm text-neutral-400 py-4">加载中...</div>
+      ) : trendingTopics.length === 0 ? (
+        <div className="text-center text-sm text-neutral-400 py-4">暂无热门数据</div>
+      ) : (
       <div className="space-y-4">
         {trendingTopics.map((topic, index) => (
           <div key={topic.id} className="group cursor-pointer">
@@ -36,17 +60,18 @@ export function TrendingWidget() {
                   {topic.title}
                 </p>
                 <p className="text-xs text-neutral-400 mt-1">
-                  热度 {topic.score}
+                  活跃度 {topic.score}
                 </p>
               </div>
             </div>
           </div>
         ))}
       </div>
+      )}
       
       <div className="mt-5 pt-4 border-t border-neutral-100 dark:border-neutral-700 text-center">
         <p className="text-xs text-neutral-400 mb-2">
-            排行榜演示
+            排行榜 (基于聚合管道)
         </p>
         <span className="inline-block px-2 py-1 text-[10px] bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 rounded">
             基于 MongoDB Aggregate 计算

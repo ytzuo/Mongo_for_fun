@@ -3,24 +3,44 @@ import { PostCard } from "@/components/PostCard";
 import { CreatePostForm } from "@/components/CreatePostForm";
 import { SearchBar } from "@/components/SearchBar";
 import { TrendingWidget } from "@/components/TrendingWidget";
+import { SeedButton } from "@/components/SeedButton"; // 引入新组件
 import connectDB from "@/lib/db";
 import PostModel from "@/models/Post";
 
 export const dynamic = 'force-dynamic';
 
-async function getPosts() {
+async function getPosts(query?: string) {
   try {
     await connectDB();
-    const rawPosts = await PostModel.find({}).sort({ createdAt: -1 });
-    return JSON.parse(JSON.stringify(rawPosts));
+    if (query) {
+       // 全文搜索模式
+       const filter = { $text: { $search: query } };
+       const rawPosts = await PostModel.find(
+          filter,
+          { score: { $meta: "textScore" } }
+       )
+       .sort({ score: { $meta: "textScore" } });
+       
+       return JSON.parse(JSON.stringify(rawPosts));
+    } else {
+       // 默认列表模式
+       const rawPosts = await PostModel.find({}).sort({ createdAt: -1 });
+       return JSON.parse(JSON.stringify(rawPosts));
+    }
   } catch (error) {
     console.error("Database Error:", error);
     return [];
   }
 }
 
-export default async function Home() {
-  const posts = await getPosts();
+interface HomeProps {
+  searchParams: Promise<{ q?: string }>;
+}
+
+export default async function Home(props: HomeProps) {
+  const searchParams = await props.searchParams;
+  const query = searchParams?.q || "";
+  const posts = await getPosts(query);
 
   return (
     <main className="min-h-screen bg-neutral-100 dark:bg-neutral-950 py-10 px-4">
@@ -37,15 +57,16 @@ export default async function Home() {
                 MongoDB 学习圈
               </h1>
             </div>
-            <p className="text-neutral-500 dark:text-neutral-400 mb-6">
-              这是一个基于 Next.js 和 MongoDB 的示例项目。
-              <br />
-              在这里掌握 Unique Index, Text Search 和 Aggregation Pipeline。
-            </p>
+            <div className="flex justify-between items-start">
+                <p className="text-neutral-500 dark:text-neutral-400 mb-6 flex-1">
+                {query ? `正在显示 "${query}" 的搜索结果` : "这是一个基于 Next.js 和 MongoDB 的示例项目。在这里掌握 Unique Index, Text Search 和 Aggregation Pipeline。"}
+                </p>
+                <SeedButton />
+            </div>
           </header>
 
           {/* 发布新帖子区域 */}
-          <CreatePostForm />
+          {!query && <CreatePostForm />}
 
           {/* 帖子列表区域 */}
           <div className="space-y-6">

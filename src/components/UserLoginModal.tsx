@@ -25,10 +25,38 @@ export function UserLoginModal() {
       return;
     }
 
-    // 这里可以添加调用后端注册接口的逻辑
-    // await fetch('/api/users', ...)
-    
-    login(name);
+    try {
+      // 自动注册/登录逻辑
+      const res = await fetch('/api/users/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: name,
+          email: `${name}@example.com`, // 演示用伪造邮箱
+          password: 'password123'       // 演示用固定密码
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        // 如果是 409 (用户已存在)，我们在这个演示里直接当作登录成功
+        if (res.status === 409) {
+           login(name);
+           return;
+        }
+        setError(data.error || "注册失败");
+        return;
+      }
+
+      // 注册成功 (201)
+      login(name);
+
+    } catch (err) {
+      setError("网络请求失败");
+    }
   };
 
   return (
