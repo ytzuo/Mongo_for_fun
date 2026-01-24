@@ -11,12 +11,16 @@ export interface IComment {
 export interface IPost extends Document {
   author: string;
   content: string;
-  likes: number;
-  dislikes: number;
+  // likes: number; // 废弃
+  // dislikes: number; // 废弃
+  likedBy: string[]; // 存储用户 ID 或 username
+  dislikedBy: string[];
   comments: IComment[];
   createdAt: Date;
   updatedAt: Date;
   id: string; // 虚拟字段
+  likes: number; // 虚拟字段
+  dislikes: number; // 虚拟字段
 }
 
 // 1. 定义 Comment Schema (作为嵌入文档)
@@ -50,6 +54,16 @@ const PostSchema = new Schema<IPost>(
       type: String, 
       required: [true, "内容不能为空"] 
     },
+    // 将计数器替换为数组
+    likedBy: {
+        type: [String],
+        default: []
+    },
+    dislikedBy: {
+        type: [String],
+        default: []
+    },
+    /*
     likes: { 
       type: Number, 
       default: 0,
@@ -60,15 +74,26 @@ const PostSchema = new Schema<IPost>(
       default: 0,
       min: 0
     },
+    */
     // 嵌入 CommentSchema 数组
     comments: [CommentSchema], 
   },
   {
     // Mongoose 选项
     timestamps: true, // 自动管理 createdAt 和 updatedAt 字段
-    toJSON: { virtuals: true, versionKey: false }    
+    toJSON: { virtuals: true, versionKey: false },
+    toObject: { virtuals: true }
   }
 );
+
+// 定义虚拟字段 likes 和 dislikes
+PostSchema.virtual('likes').get(function() {
+    return this.likedBy ? this.likedBy.length : 0;
+});
+
+PostSchema.virtual('dislikes').get(function() {
+    return this.dislikedBy ? this.dislikedBy.length : 0;
+});
 
 // 为全文搜索创建索引
 PostSchema.index({ content: "text", author: "text" });

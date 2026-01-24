@@ -23,12 +23,15 @@ export async function GET(request: NextRequest) {
             {
                 $addFields: {
                     // 2. 计算活跃度分数 = 点赞数 * 2 + 评论数 * 5
+                    // 注意：现在 likes 是数组 likedBy 的长度，不能直接引用
                     activityScore: {
                         $add: [
-                            { $multiply: [{ $ifNull: ["$likes", 0] }, 2] },
+                            { $multiply: [{ $size: { $ifNull: ["$likedBy", []] } }, 2] },
                             { $multiply: ["$commentsCount", 5] }
                         ]
-                    }
+                    },
+                    // 为了让前端还是能拿到 likes 数字，我们需要手动计算并赋值，因为 Virtuals 在 aggregate 中不自动生效
+                    likes: { $size: { $ifNull: ["$likedBy", []] } }
                 }
             },
             {

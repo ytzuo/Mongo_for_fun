@@ -1,39 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Post, {IPost} from '@/models/Post';
+import Post from '@/models/Post';
 import connectDB from '@/lib/db';
 
-type VoteType = 'like' | 'dislike';
-type VoteBody = { type : VoteType; value: 1 | -1  };
-
-// 给帖子投票
-export async function PATCH(request: NextRequest, 
-    props: { params: Promise<{ id: string }> }) {
+export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {
     const params = await props.params;
     await connectDB();
 
     try {
-        const body: VoteBody = await request.json();
-        const value = body.value;
+        const body = await request.json();
+        const { type, username } = body; 
 
-        if (!['like', 'dislike'].includes(body.type) || ![1, -1].includes(value)) {
-            return NextResponse.json({ error: "Invalid vote type or value" }, { status: 400 });
+        if (!username) {
+            return NextResponse.json({ error: "需登录后才能投票" }, { status: 401 });
         }
 
-        // inc 对象，可以在数据库层面对字段进行原子加减
-        const incKey = body.type === 'like' ? 'likes' : 'dislikes';
-        const update = { $inc: { [incKey]: value } };
+        const updateOps: any = {};
 
+        if (type === "like") {
+            // 如果点赞: 将用户加入 likedBy, 并从 dislikedBy 移除
+            updateOps.$addToSet = { likedBy: username };
+            updateOps.$pull = { dislikedBy: username };
+        } else if (type === "dislike") {
+            // 如果点踩
+            updateOps.$addToSet = { dislikedBy: username };
+            updateOps.$pull = { likedBy: username };
+        } else {
+             // 取消操作 (对应前端 userVote set to null)
+             updateOps.$pull = { likedBy: username, dislikedBy: username };
+        }
+        
+        // 使用原子操作更新
         const updatedPost = await Post.findByIdAndUpdate(
             params.id,
-            update,
+            updateOps,
             { new: true }
-        ).lean();
+        );
 
         if (!updatedPost) {
-            return NextResponse.json({ error: '帖子不存在' }, { status: 404 });
+            return NextResponse.json({ error: "帖子不存在" }, { status: 404 });
         }
+
         return NextResponse.json(updatedPost);
     } catch (error) {
-        return NextResponse.json({ error: "Failed to vote on post" }, { status: 500 });
+        console.error("Vote error:", error);
+        return NextResponse.json({ error: "Failed to vote" }, { status: 500 });
     }
 }

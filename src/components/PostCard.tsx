@@ -13,14 +13,27 @@ export function PostCard({ post: initialPost }: PostCardProps) {
   // 使用初始数据初始化状态
   const [likes, setLikes] = useState(initialPost.likes);
   const [dislikes, setDislikes] = useState(initialPost.dislikes);
-  // 注意：在没有用户认证系统的情况下，刷新页面会丢失 "已投票" 状态
-  const [userVote, setUserVote] = useState<"like" | "dislike" | null>(null);
+  
+  // 初始化用户投票状态
+  const [userVote, setUserVote] = useState<"like" | "dislike" | null>(() => {
+    if (!username) return null;
+    // initialPost.likedBy 可能在某些即时更新中未及时同步，建议在真实项目中 fetch 获取
+    // 这里为了演示，假设 initialPost 包含了 likedBy 数组 (由后端 Post Model 提供)
+    if ((initialPost as any).likedBy?.includes(username)) return "like";
+    if ((initialPost as any).dislikedBy?.includes(username)) return "dislike";
+    return null;
+  });
 
   const [comments, setComments] = useState<Comment[]>(initialPost.comments);
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleVote = async (type: "like" | "dislike") => {
+    if (!username) {
+        alert("请先设置昵称");
+        return;
+    }
+
     // 1. 乐观更新 (Optimistic UI Update)
     const previousUserVote = userVote;
     const previousLikes = likes;
@@ -31,14 +44,14 @@ export function PostCard({ post: initialPost }: PostCardProps) {
 
     // 计算新的 UI 状态
     if (userVote === type) {
-      // 取消投票
+      // 当前已投这个票 -> 取消
       if (type === "like") newLikes--;
       else newDislikes--;
       setUserVote(null);
     } else {
       // 切换投票或新投票
-      if (userVote === "like") newLikes--;
-      if (userVote === "dislike") newDislikes--;
+      if (userVote === "like") newLikes--;      // 曾经赞过，现在要减掉
+      if (userVote === "dislike") newDislikes--; // 曾经踩过，现在要减掉
 
       if (type === "like") newLikes++;
       else newDislikes++;
@@ -50,33 +63,26 @@ export function PostCard({ post: initialPost }: PostCardProps) {
 
     // 2. 发送 API 请求
     try {
-      const requests = [];
-
-      // 如果之前投过票且不是当前选中的（即切换投票），先取消之前的
-      if (previousUserVote && previousUserVote !== type) {
-        requests.push(
-          fetch(`/api/posts/${initialPost.id}/vote`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ type: previousUserVote, value: -1 }),
-          })
-        );
-      }
-
-      // 处理当前的点击：如果是取消（userVote === type），则 value 为 -1，否则为 1
+      // 现在的 API 只需要传 type 和 username，后端会自动处理互斥逻辑
+      // 如果是取消操作 (比如再次点击了赞)，不仅前端 userVote 设为 null，
+      // 我们也传一个特殊的 type 或者在前端判断
+      
       const isCancel = previousUserVote === type;
-      requests.push(
-        fetch(`/api/posts/${initialPost.id}/vote`, {
+      // 如果 userVote 变成了 null (取消)，我们传 type="cancel" 给后端，或者复用原有 type 并在后端判断?
+      // 为了简单，我们只发一次请求。
+      
+      const payloadType = isCancel ? "cancel" : type;
+
+      const res = await fetch(`/api/posts/${initialPost.id}/vote`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type, value: isCancel ? -1 : 1 }),
-        })
-      );
+          body: JSON.stringify({ 
+              type: payloadType, 
+              username 
+          }),
+      });
 
-      const responses = await Promise.all(requests);
-      for (const res of responses) {
-        if (!res.ok) throw new Error("Vote failed");
-      }
+      if (!res.ok) throw new Error("Vote failed");
       
     } catch (error) {
       console.error("Vote error:", error);

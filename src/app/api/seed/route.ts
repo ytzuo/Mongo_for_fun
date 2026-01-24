@@ -29,11 +29,12 @@ export async function POST() {
     });
 
     // 4. 插入不同热度和内容的帖子
+    // 注意：likes/dislikes 现在通过 likedBy/dislikedBy 数组计算，所以种子数据要改
     const posts = [
       {
         author: user.username,
         content: "学习 MongoDB 的 Aggregation Pipeline 非常重要，它是数据分析的神器。",
-        likes: 120, // 高点赞
+        likedBy: Array(120).fill("dummy_user"), // 模拟 120 人点赞 (使用假名)
         comments: [
             { content: "学到了！", author: "路人A", createdAt: new Date() },
             { content: "非常实用", author: "路人B", createdAt: new Date() }
@@ -42,19 +43,19 @@ export async function POST() {
       {
         author: "nextjs_fan",
         content: "Next.js 14 server actions 结合 MongoDB 使用体验极佳。",
-        likes: 5,
+        likedBy: ["fan1", "fan2", "fan3", "fan4", "fan5"],
         comments: []
       },
       {
         author: "search_engine",
         content: "如何优化 MongoDB 的 $text 全文搜索性能？这是个好问题。",
-        likes: 45,
+        likedBy: Array(45).fill("search_lover"),
         comments: [{ content: "同问", author: "Jack", createdAt: new Date() }]
       },
       {
         author: "db_admin",
         content: "防止重复注册应该使用 Unique Index 唯一索引。",
-        likes: 88,
+        likedBy: Array(88).fill("db_user"),
         comments: [
             { content: "确实", author: "A", createdAt: new Date() },
             { content: "+1", author: "B", createdAt: new Date() },

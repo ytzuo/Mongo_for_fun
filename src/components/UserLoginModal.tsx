@@ -20,8 +20,8 @@ export function UserLoginModal() {
       return;
     }
 
-    if (name.length > 10) {
-      setError("昵称不能超过10个字符");
+    if (name.length > 20) {
+      setError("昵称不能超过20个字符");
       return;
     }
 
