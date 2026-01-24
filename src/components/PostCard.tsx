@@ -2,12 +2,14 @@
 
 import React, { useState } from "react";
 import { Post, Comment } from "@/types";
+import { useUser } from "@/context/UserContext";
 
 interface PostCardProps {
   post: Post;
 }
 
 export function PostCard({ post: initialPost }: PostCardProps) {
+  const { username } = useUser();
   // 使用初始数据初始化状态
   const [likes, setLikes] = useState(initialPost.likes);
   const [dislikes, setDislikes] = useState(initialPost.dislikes);
@@ -98,7 +100,7 @@ export function PostCard({ post: initialPost }: PostCardProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           content: newComment,
-          author: "当前用户", // 实际项目中应从 Session 获取
+          author: username || "匿名马甲", 
         }),
       });
 
@@ -127,7 +129,7 @@ export function PostCard({ post: initialPost }: PostCardProps) {
             {initialPost.author[0].toUpperCase()}
           </div>
           <div>
-            <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">
+            <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 break-all">
               {initialPost.author}
             </h3>
             <p className="text-xs text-neutral-500">
@@ -139,7 +141,7 @@ export function PostCard({ post: initialPost }: PostCardProps) {
 
       {/* 内容区域 */}
       <div className="p-4">
-        <p className="text-neutral-700 dark:text-neutral-300 leading-relaxed whitespace-pre-wrap">
+        <p className="text-neutral-700 dark:text-neutral-300 leading-relaxed whitespace-pre-wrap break-words">
           {initialPost.content}
         </p>
       </div>

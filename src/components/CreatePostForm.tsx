@@ -2,16 +2,17 @@
 
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
+import { useUser } from "@/context/UserContext";
 
 export function CreatePostForm() {
   const router = useRouter();
-  const [author, setAuthor] = useState("");
+  const { username } = useUser(); // 获取当前用户
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!author.trim() || !content.trim()) return;
+    if (!username || !content.trim()) return;
 
     setIsSubmitting(true);
     try {
@@ -20,14 +21,13 @@ export function CreatePostForm() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ author, content }),
+        body: JSON.stringify({ author: username, content }), // 使用 context 中的用户名
       });
 
       if (!res.ok) {
         throw new Error("Failed to create post");
       }
 
-      setAuthor("");
       setContent("");
       router.refresh();
     } catch (error) {
@@ -45,24 +45,14 @@ export function CreatePostForm() {
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* 昵称 */}
-        <div>
-          <label 
-            htmlFor="author" 
-            className="block text-base font-black text-neutral-900 dark:text-neutral-100 mb-2"
-          >
-            昵称
-          </label>
-          <input
-            id="author"
-            type="text"
-            value={author}
-            onChange={(e) => setAuthor(e.target.value)}
-            disabled={isSubmitting}
-            placeholder="请输入您的昵称"
-            className="w-full px-4 py-3 rounded-xl border-0 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm transition-all font-medium"
-          />
-        </div>
+         <div className="flex items-center gap-2">
+           <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-sm">
+             {username?.[0]?.toUpperCase()}
+           </div>
+           <span className="text-neutral-600 dark:text-neutral-400 font-medium text-sm">
+             正在以 <span className="text-neutral-900 dark:text-neutral-100 font-bold break-all">{username}</span> 的身份发布
+           </span>
+         </div>
 
         {/* 内容 */}
         <div>
@@ -87,7 +77,7 @@ export function CreatePostForm() {
         <div className="flex justify-end pt-2">
             <button
                 type="submit"
-                disabled={isSubmitting || !author.trim() || !content.trim()}
+                disabled={isSubmitting || !content.trim()}
                 className="group inline-flex items-center justify-center gap-2 px-12 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold text-sm transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:bg-blue-400 whitespace-nowrap"
             >
             {isSubmitting ? (
