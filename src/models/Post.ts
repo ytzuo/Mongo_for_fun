@@ -8,18 +8,15 @@ export interface IComment {
 }
 
 // 定义 Post 的接口
-export interface IPost {
+export interface IPost extends Document {
   author: string;
   content: string;
   likes: number;
   dislikes: number;
   comments: IComment[];
-  // 自动生成的字段
   createdAt: Date;
   updatedAt: Date;
-  // Mongoose 字段
-  _id: string;
-  id: string;
+  id: string; // 虚拟字段
 }
 
 // 1. 定义 Comment Schema (作为嵌入文档)
@@ -67,14 +64,7 @@ const PostSchema = new Schema<IPost>(
   {
     // Mongoose 选项
     timestamps: true, // 自动管理 createdAt 和 updatedAt 字段
-    toJSON: {
-      virtuals: true, // 让 id (virtual) 在转 JSON 时出现
-      versionKey: false, // 隐藏 __v 字段
-      transform: function (doc, ret) {
-        ret.id = ret._id; // 将 _id 映射为 id
-        delete (ret as any)._id;
-      }
-    }
+    toJSON: { virtuals: true, versionKey: false }    
   }
 );
 
