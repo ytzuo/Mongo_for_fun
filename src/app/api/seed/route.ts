@@ -33,40 +33,48 @@ export async function POST() {
       email: "expert@example.com",
       password: "password123"
     });
+    
+    const userFan = await User.create({
+      username: "nextjs_fan",
+      email: "fan@example.com",
+      password: "password123"
+    });
+    
+    const userSearch = await User.create({
+      username: "search_engine",
+      email: "search@example.com",
+      password: "password123"
+    });
 
     // 4. 插入不同热度和内容的帖子
     // 注意：likes/dislikes 现在通过 likedBy/dislikedBy 数组计算，所以种子数据要改
     const posts = [
       {
-        author: user.username,
+        author: user._id, // 使用引用
         content: "学习 MongoDB 的 Aggregation Pipeline 非常重要，它是数据分析的神器。",
         likedBy: Array(120).fill("dummy_user"), // 模拟 120 人点赞 (使用假名)
         comments: [
-            { content: "学到了！", author: "路人A", createdAt: new Date() },
-            { content: "非常实用", author: "路人B", createdAt: new Date() }
+            { content: "学到了！", author: userFan._id, createdAt: new Date() },
+            { content: "非常实用", author: userSearch._id, createdAt: new Date() }
         ]
       },
       {
-        author: "nextjs_fan",
+        author: userFan._id,
         content: "Next.js 14 server actions 结合 MongoDB 使用体验极佳。",
         likedBy: ["fan1", "fan2", "fan3", "fan4", "fan5"],
         comments: []
       },
       {
-        author: "search_engine",
+        author: userSearch._id,
         content: "如何优化 MongoDB 的 $text 全文搜索性能？这是个好问题。",
         likedBy: Array(45).fill("search_lover"),
-        comments: [{ content: "同问", author: "Jack", createdAt: new Date() }]
+        comments: [{ content: "同问", author: user._id, createdAt: new Date() }]
       },
       {
-        author: "db_admin",
-        content: "防止重复注册应该使用 Unique Index 唯一索引。",
+        author: user._id,
+        content: "防止重复注册应该使用 Unique Index 唯一索引。", 
         likedBy: Array(88).fill("db_user"),
-        comments: [
-            { content: "确实", author: "A", createdAt: new Date() },
-            { content: "+1", author: "B", createdAt: new Date() },
-            { content: "正解", author: "C", createdAt: new Date() }
-        ]
+        comments: []
       }
     ];
 

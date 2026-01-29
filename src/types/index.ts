@@ -1,13 +1,18 @@
+export interface User {
+  _id: string;
+  username: string;
+}
+
 export interface Comment {
   id: string;
   content: string;
-  author: string;
+  author: string | User;
   createdAt: string;
 }
 
 export interface Post {
   id: string;
-  author: string;
+  author: string | User;
   content: string;
   createdAt: string;
   likes: number;

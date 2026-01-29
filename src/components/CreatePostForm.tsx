@@ -6,13 +6,13 @@ import { useUser } from "@/context/UserContext";
 
 export function CreatePostForm() {
   const router = useRouter();
-  const { username } = useUser(); // 获取当前用户
+  const { username, userId } = useUser(); // 获取当前用户
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !content.trim()) return;
+    if (!userId || !content.trim()) return;
 
     setIsSubmitting(true);
     try {
@@ -21,7 +21,7 @@ export function CreatePostForm() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ author: username, content }), // 使用 context 中的用户名
+        body: JSON.stringify({ author: userId, content }), // 使用 context 中的用户ID
       });
 
       if (!res.ok) {

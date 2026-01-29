@@ -9,7 +9,7 @@ interface PostCardProps {
 }
 
 export function PostCard({ post: initialPost }: PostCardProps) {
-  const { username } = useUser();
+  const { username, userId } = useUser();
   // 使用初始数据初始化状态
   const [likes, setLikes] = useState(initialPost.likes);
   const [dislikes, setDislikes] = useState(initialPost.dislikes);
@@ -105,12 +105,16 @@ export function PostCard({ post: initialPost }: PostCardProps) {
     setIsSubmitting(true);
 
     try {
+      if (!userId) {
+          alert("请先登录");
+          return;
+      }
       const res = await fetch(`/api/posts/${initialPost.id}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           content: newComment,
-          author: username || "匿名马甲", 
+          author: userId, 
         }),
       });
 
@@ -136,11 +140,11 @@ export function PostCard({ post: initialPost }: PostCardProps) {
       <div className="p-4 flex items-center justify-between border-b border-neutral-100 dark:border-neutral-700">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg">
-            {initialPost.author[0].toUpperCase()}
+            {(typeof initialPost.author === 'string' ? initialPost.author : initialPost.author.username)[0]?.toUpperCase()}
           </div>
           <div>
             <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 break-all">
-              {initialPost.author}
+              {(typeof initialPost.author === 'string' ? initialPost.author : initialPost.author.username)}
             </h3>
             <p className="text-xs text-neutral-500">
               {new Date(initialPost.createdAt).toLocaleString()}
@@ -227,12 +231,12 @@ export function PostCard({ post: initialPost }: PostCardProps) {
               // 使用 _id 作为后备 key，以防 id 虚拟字段因序列化问题丢失
               <div key={comment.id || (comment as any)._id} className="flex gap-3">
                 <div className="w-8 h-8 rounded-full bg-neutral-200 dark:bg-neutral-700 flex-shrink-0 flex items-center justify-center text-xs font-bold text-neutral-600 dark:text-neutral-300">
-                  {comment.author[0]}
+                  {(typeof comment.author === 'string' ? comment.author : comment.author.username)[0]?.toUpperCase()}
                 </div>
                 <div className="flex-1 bg-white dark:bg-neutral-800 p-3 rounded-2xl rounded-tl-none shadow-sm text-sm border border-neutral-100 dark:border-neutral-700">
                   <div className="flex justify-between items-center mb-1">
                     <span className="font-semibold text-neutral-900 dark:text-neutral-100">
-                      {comment.author}
+                      {(typeof comment.author === 'string' ? comment.author : comment.author.username)}
                     </span>
                     <span className="text-xs text-neutral-400">
                       {new Date(comment.createdAt).toLocaleDateString()}

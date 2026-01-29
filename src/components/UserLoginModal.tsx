@@ -54,7 +54,7 @@ export function UserLoginModal() {
          alert("欢迎回来! (检测到账号已存在，自动登录)");
       }
       
-      login(name);
+      login(data.username, data._id);
 
     } catch (err) {
       setError("网络请求失败");

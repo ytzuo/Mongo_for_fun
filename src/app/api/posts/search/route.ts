@@ -34,6 +34,8 @@ export async function GET(request: NextRequest) {
                 filter,
                 { score: { $meta: "textScore" } } // 投影出相关性分数
             )
+            .populate('author', 'username')
+            .populate('comments.author', 'username')
             .sort({ score: { $meta: "textScore" } }) // 按相关性分数排序
             .skip(skip)
             .limit(limit)

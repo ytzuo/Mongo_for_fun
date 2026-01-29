@@ -15,7 +15,19 @@ export async function GET(request: NextRequest) {
         */ 
         const hotPosts = await Post.aggregate([
             {
+                $lookup: {
+                    from: "users",
+                    localField: "author",
+                    foreignField: "_id",
+                    as: "authorInfo"
+                }
+            },
+            {
+                $unwind: "$authorInfo"
+            },
+            {
                 $addFields: {
+                    author: "$authorInfo.username", // 将 author 字段替换为用户名字符串
                     // 1. 计算评论数量 (防止 comments 为 null)
                     commentsCount: { $size: { $ifNull: ["$comments", []] } }
                 }

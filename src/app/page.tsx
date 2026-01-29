@@ -20,12 +20,17 @@ async function getPosts(query?: string) {
           filter,
           { score: { $meta: "textScore" } }
        )
+       .populate({ path: 'author', select: 'username' })
+       .populate({ path: 'comments.author', select: 'username' })
        .sort({ score: { $meta: "textScore" } });
        
        return JSON.parse(JSON.stringify(rawPosts));
     } else {
        // 默认列表模式
-       const rawPosts = await PostModel.find({}).sort({ createdAt: -1 });
+       const rawPosts = await PostModel.find({})
+         .populate({ path: 'author', select: 'username' })
+         .populate({ path: 'comments.author', select: 'username' })
+         .sort({ createdAt: -1 });
        return JSON.parse(JSON.stringify(rawPosts));
     }
   } catch (error) {

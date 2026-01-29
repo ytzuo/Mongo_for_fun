@@ -1,15 +1,16 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
+import { IUser } from "./User";
 
 // 定义 Comment 的接口（对应 Typescript 类型）
 export interface IComment {
   content: string;
-  author: string;
+  author: IUser | string;
   createdAt: Date;
 }
 
 // 定义 Post 的接口
 export interface IPost extends Document {
-  author: string;
+  author: IUser | string;
   content: string;
   // likes: number; // 废弃
   // dislikes: number; // 废弃
@@ -31,9 +32,9 @@ const CommentSchema = new Schema<IComment>({
     trim: true 
   },
   author: { 
-    type: String, 
-    required: true,
-    default: "匿名用户" 
+    type: Schema.Types.ObjectId, 
+    ref: 'User',
+    required: true
   },
   createdAt: { 
     type: Date, 
@@ -47,7 +48,8 @@ const CommentSchema = new Schema<IComment>({
 const PostSchema = new Schema<IPost>(
   {
     author: { 
-      type: String, 
+      type: Schema.Types.ObjectId, 
+      ref: 'User',
       required: [true, "作者不能为空"] 
     },
     content: { 

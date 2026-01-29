@@ -6,7 +6,12 @@ import connectDB from '@/lib/db';
 export async function GET(request: NextRequest) {
     await connectDB();
     try {
-        const posts: IPost[] = await Post.find().sort({ createdAt: -1 }).lean().limit(20);
+        const posts: IPost[] = await Post.find()
+            .populate('author', 'username')
+            .populate('comments.author', 'username')
+            .sort({ createdAt: -1 })
+            .lean()
+            .limit(20);
         return NextResponse.json(posts);
     } catch (error) {
         return NextResponse.json({ error: "Failed to fetch posts" }, { status: 500 });
